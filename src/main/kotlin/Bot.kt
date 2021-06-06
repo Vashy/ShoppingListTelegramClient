@@ -8,11 +8,12 @@ import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ParseMode.MARKDOWN_V2
 import com.github.kotlintelegrambot.logging.LogLevel
+import com.github.kotlintelegrambot.network.fold
 
 private const val tokenEnvKey = "SHOPPING_LIST_BOT_TOKEN"
 
 fun startPolling(manager: ShoppingListManager) {
-    bot {
+    val bot = bot {
         token = readEnv(tokenEnvKey)
         logLevel = LogLevel.All(networkLogLevel = LogLevel.Network.Basic)
         dispatch {
@@ -22,7 +23,7 @@ fun startPolling(manager: ShoppingListManager) {
             command("c") { handleClearCommand(manager) }
         }
     }
-        .startPolling()
+    bot.startPolling()
 }
 
 private fun CommandHandlerEnvironment.handleClearCommand(manager: ShoppingListManager) {
@@ -39,7 +40,8 @@ private fun CommandHandlerEnvironment.handleListCommand(manager: ShoppingListMan
 }
 
 private fun CommandHandlerEnvironment.handleAddCommand(manager: ShoppingListManager) {
-    val text = message.text!!.removePrefix("/a").trim()
+    val botName = bot.getMe().first?.body()?.result?.username ?: ""
+    val text = message.text!!.removePrefix("/a").removePrefix("@$botName").trim()
     manager.create(ShoppingItem(text))
     bot.sendMessage(
         chatId = ChatId.fromId(message.chat.id),
